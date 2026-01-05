@@ -1,6 +1,8 @@
 package com.example.library.controller;
 
 import com.example.library.model.Book;
+import com.example.library.service.BookService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,68 +13,43 @@ import java.util.List;
 @RequestMapping("/api/books")
 public class BookController {
 
-    // GET ALL BOOKS (HARDCODED)
+    private final BookService bookService;
+
+    @Autowired
+    public BookController(BookService bookService) {
+        this.bookService = bookService;
+    }
+
     @GetMapping
     public List<Book> getAllBooks() {
-
-        List<Book> books = new ArrayList<>();
-
-        books.add(new Book(
-                "Clean Code",
-                "Robert C. Martin",
-                "978-0132350884",
-                2008
-        ));
-
-        books.add(new Book(
-                "Effective Java",
-                "Joshua Bloch",
-                "978-0134685991",
-                2018
-        ));
-
-        books.add(new Book(
-                "Spring in Action",
-                "Craig Walls",
-                "978-1617294945",
-                2021
-        ));
-
-        return books;
+        return bookService.getAllBooks();
     }
 
-    // GET BOOK BY ID (HARDCODED)
     @GetMapping("/{id}")
     public ResponseEntity<Book> getBookById(@PathVariable Long id) {
-
-        Book book = new Book(
-                "Clean Code",
-                "Robert C. Martin",
-                "978-0132350884",
-                2008
-        );
-
-        return ResponseEntity.ok(book);
+        return bookService.getBookById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    // CREATE BOOK (JUST ECHO BACK)
     @PostMapping
     public Book createBook(@RequestBody Book book) {
-        return book;
+        return bookService.saveBook(book);
     }
 
-    // UPDATE BOOK (JUST ECHO BACK)
     @PutMapping("/{id}")
-    public ResponseEntity<Book> updateBook(
-            @PathVariable Long id,
-            @RequestBody Book bookDetails) {
-
-        return ResponseEntity.ok(bookDetails);
+    public ResponseEntity<Book> updateBook(@PathVariable Long id, @RequestBody Book bookDetails) {
+        try {
+            Book updatedBook = bookService.updateBook(id, bookDetails);
+            return ResponseEntity.ok(updatedBook);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    // DELETE BOOK
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteBook(@PathVariable Long id) {
-        return ResponseEntity.ok("Book deleted successfully");
+    public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
+        bookService.deleteBook(id);
+        return ResponseEntity.ok().build();
     }
 }
